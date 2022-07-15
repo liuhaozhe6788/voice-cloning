@@ -413,7 +413,7 @@ class WaveRNN(nn.Module):
             print(msg, file=f)
 
     def load(self, path, optimizer) :
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, map_location="cpu")
         if "optimizer_state" in checkpoint:
             self.load_state_dict(checkpoint["model_state"])
             optimizer.load_state_dict(checkpoint["optimizer_state"])

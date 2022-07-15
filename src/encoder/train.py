@@ -24,7 +24,8 @@ def train(run_id: str, clean_data_root: Path, models_dir: Path, umap_every: int,
         dataset,
         speakers_per_batch,
         utterances_per_speaker,
-        num_workers=4,
+        num_workers=8,
+        pin_memory=True
     )
 
     # Setup the device on which to run the forward pass and the loss. These can be different,
@@ -69,7 +70,7 @@ def train(run_id: str, clean_data_root: Path, models_dir: Path, umap_every: int,
     vis.log_implementation({"Device": device_name})
 
     # Training loop
-    profiler = Profiler(summarize_every=10, disabled=False)
+    profiler = Profiler(summarize_every=100, disabled=False)
     for step, speaker_batch in enumerate(loader, init_step):
         profiler.tick("Blocking, waiting for batch (threaded)")
         # temp = speaker_batch

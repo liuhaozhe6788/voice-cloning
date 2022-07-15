@@ -21,15 +21,15 @@ if __name__ == "__main__":
         "Path to the root directory that contains all models. A directory <run_name> will be created under this root."
         "It will contain the saved model weights, as well as backups of those weights and plots generated during "
         "training.")
-    parser.add_argument("-v", "--vis_every", type=int, default=10, help= \
+    parser.add_argument("-v", "--vis_every", type=int, default=100, help= \
         "Number of steps between updates of the loss and the plots.")
-    parser.add_argument("-u", "--umap_every", type=int, default=50, help= \
+    parser.add_argument("-u", "--umap_every", type=int, default=500, help= \
         "Number of steps between updates of the umap projection. Set to 0 to never update the "
         "projections.")
     parser.add_argument("-s", "--save_every", type=int, default=100, help= \
         "Number of steps between updates of the model on the disk. Set to 0 to never save the "
         "model.")
-    parser.add_argument("-b", "--backup_every", type=int, default=100, help= \
+    parser.add_argument("-b", "--backup_every", type=int, default=1000, help= \
         "Number of steps between backups of the model. Set to 0 to never make backups of the "
         "model.")
     parser.add_argument("-f", "--force_restart", action="store_true", help= \

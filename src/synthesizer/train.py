@@ -106,6 +106,7 @@ def train(run_id: str, syn_dir: Path, models_dir: Path, save_every: int,  backup
     mel_dir = syn_dir.joinpath("mels")
     embed_dir = syn_dir.joinpath("embeds")
     dataset = SynthesizerDataset(metadata_fpath, mel_dir, embed_dir, hparams)
+    losses = []
 
     for i, session in enumerate(hparams.tts_schedule):
         current_step = model.get_step()
@@ -137,7 +138,7 @@ def train(run_id: str, syn_dir: Path, models_dir: Path, save_every: int,  backup
             p["lr"] = lr
 
         collate_fn = partial(collate_synthesizer, r=r, hparams=hparams)
-        data_loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=2, collate_fn=collate_fn)
+        data_loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=16, collate_fn=collate_fn)
 
         total_iters = len(dataset)
         steps_per_epoch = np.ceil(total_iters / batch_size).astype(np.int32)
@@ -190,6 +191,9 @@ def train(run_id: str, syn_dir: Path, models_dir: Path, save_every: int,  backup
                 msg = f"| Epoch: {epoch}/{epochs} ({i}/{steps_per_epoch}) | Loss: {loss_window.average:#.4} | " \
                       f"{1./time_window.average:#.2} steps/s | Step: {k}k | "
                 stream(msg)
+
+                losses.append(loss_window.average)
+                np.save("synthesizer_loss/synthesizer_loss.npy", np.array(losses, dtype=float))
 
                 # Backup or save model as appropriate
                 if backup_every != 0 and step % backup_every == 0 :

@@ -18,7 +18,7 @@ class SpeakerVerificationDataset(Dataset):
         self.speaker_cycler = RandomCycler(self.speakers)
 
     def __len__(self):
-        return int(128000)
+        return int(1e10)
         
     def __getitem__(self, index):
         return next(self.speaker_cycler)

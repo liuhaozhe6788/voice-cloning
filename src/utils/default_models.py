@@ -38,10 +38,10 @@ def ensure_default_models(models_dir: Path):
     for model_name, (url, size) in default_models.items():
         target_path = models_dir / "default" / f"{model_name}.pt"
         if target_path.exists():
-            if target_path.stat().st_size != size:
-                print(f"File {target_path} is not of expected size, redownloading...")
-            else:
-                continue
+            # if target_path.stat().st_size != size:
+            #     print(f"File {target_path} is not of expected size, redownloading...")
+            # else:
+            continue
 
         thread = Thread(target=download, args=(url, target_path, len(jobs)))
         thread.start()

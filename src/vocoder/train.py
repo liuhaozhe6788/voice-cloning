@@ -13,6 +13,8 @@ from vocoder.distribution import discretized_mix_logistic_loss
 from vocoder.gen_wavernn import gen_testset
 from vocoder.models.fatchord_version import WaveRNN
 from vocoder.vocoder_dataset import VocoderDataset, collate_vocoder
+from vocoder.utils import ValueWindow
+from utils.profiler import Profiler
 
 
 def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_truth: bool, save_every: int,
@@ -45,6 +47,7 @@ def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_tr
     for p in optimizer.param_groups:
         p["lr"] = hp.voc_lr
     loss_func = F.cross_entropy if model.mode == "RAW" else discretized_mix_logistic_loss
+    loss_window = ValueWindow(100)
 
     # Load the weights
     model_dir = models_dir / run_id
@@ -65,20 +68,23 @@ def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_tr
     wav_dir = syn_dir.joinpath("audio")
     dataset = VocoderDataset(metadata_fpath, mel_dir, wav_dir)
     test_loader = DataLoader(dataset, batch_size=1, shuffle=True)
+    losses = []
 
     # Begin the training
     simple_table([('Batch size', hp.voc_batch_size),
                   ('LR', hp.voc_lr),
                   ('Sequence Len', hp.voc_seq_len)])
 
+    # profiler = Profiler(summarize_every=10, disabled=False)
     for epoch in range(1, 350):
-        data_loader = DataLoader(dataset, hp.voc_batch_size, shuffle=True, num_workers=2, collate_fn=collate_vocoder)
+        data_loader = DataLoader(dataset, hp.voc_batch_size, shuffle=True, num_workers=8, collate_fn=collate_vocoder, pin_memory=True)
         start = time.time()
-        running_loss = 0.
 
         for i, (x, y, m) in enumerate(data_loader, 1):
+            # profiler.tick("Blocking, waiting for batch (threaded)")
             if torch.cuda.is_available():
                 x, m, y = x.cuda(), m.cuda(), y.cuda()
+            # profiler.tick("Data to cuda")
 
             # Forward pass
             y_hat = model(x, m)
@@ -87,16 +93,19 @@ def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_tr
             elif model.mode == 'MOL':
                 y = y.float()
             y = y.unsqueeze(-1)
+            # profiler.tick("Forward pass")
 
             # Backward pass
             loss = loss_func(y_hat, y)
+            # profiler.tick("Loss")
             optimizer.zero_grad()
             loss.backward()
+            # profiler.tick("Backward pass")
             optimizer.step()
+            # profiler.tick("Parameter update")
 
-            running_loss += loss.item()
             speed = i / (time.time() - start)
-            avg_loss = running_loss / i
+            loss_window.append(loss.item())
 
             step = model.get_step()
             k = step // 1000
@@ -108,10 +117,14 @@ def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_tr
                 model.save(weights_fpath, optimizer)
 
             msg = f"| Epoch: {epoch} ({i}/{len(data_loader)}) | " \
-                f"Loss: {avg_loss:.4f} | {speed:.1f} " \
+                f"Loss: {loss_window.average:.4f} | {speed:.1f} " \
                 f"steps/s | Step: {k}k | "
             stream(msg)
 
+            losses.append(loss_window.average)
+            np.save("vocoder_loss/vocoder_loss.npy", np.array(losses, dtype=float))
+
+            # profiler.tick("Extra saving")
 
         gen_testset(model, test_loader, hp.voc_gen_at_checkpoint, hp.voc_gen_batched,
                     hp.voc_target, hp.voc_overlap, model_dir)

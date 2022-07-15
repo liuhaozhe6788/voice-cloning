@@ -57,7 +57,7 @@ hparams = HParams(
                         (2,  1e-5, 640_000,  12)],  # lr = learning rate
 
         tts_clip_grad_norm = 1.0,                   # clips the gradient norm to prevent explosion - set to None if not needed
-        tts_eval_interval = 500,                    # Number of steps between model evaluation (sample generation)
+        tts_eval_interval = -1,                    # Number of steps between model evaluation (sample generation)
                                                     # Set to -1 to generate after completing epoch, or 0 to disable
 
         tts_eval_num_samples = 1,                   # Makes this number of samples

@@ -492,7 +492,7 @@ class Tacotron(nn.Module):
 
     def load(self, path, optimizer=None):
         # Use device of model params as location for loaded state
-        device = next(self.parameters()).device
+        device = "cpu"
         checkpoint = torch.load(str(path), map_location=device)
         self.load_state_dict(checkpoint["model_state"])
 
