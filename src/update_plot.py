@@ -11,13 +11,13 @@ def main(module_name):
         def my_function(i):
             # get data
             loss_arr = np.load("synthesizer_loss/synthesizer_loss.npy")
-            loss_arr = np.concatenate((loss_arr_193k, loss_arr), axis=0)
+            # loss_arr = np.concatenate((loss_arr_193k, loss_arr), axis=0)
             # clear axis
             ax.cla()
             # plot cpu
             ax.plot(loss_arr)
             ax.scatter(len(loss_arr) - 1, loss_arr[-1])
-            ax.text(len(loss_arr)-60, loss_arr[-1]+2, f"({len(loss_arr) - 1}, {loss_arr[-1]:.6})")
+            ax.text(len(loss_arr), loss_arr[-1], f"({len(loss_arr) - 1}, {loss_arr[-1]:.6})")
             plt.xlabel("Step-1")
             plt.ylabel("Loss")
             plt.title("Synthesizer Loss")
@@ -36,13 +36,13 @@ def main(module_name):
         def my_function(i):
             # get data
             loss_arr = np.load("vocoder_loss/vocoder_loss.npy")
-            loss_arr = np.concatenate((loss_arr_10k, loss_arr_30k, loss_arr), axis=0)
+            # loss_arr = np.concatenate((loss_arr_10k, loss_arr_30k, loss_arr), axis=0)
             # clear axis
             ax.cla()
             # plot cpu
             ax.plot(loss_arr)
             ax.scatter(len(loss_arr) - 1, loss_arr[-1])
-            ax.text(len(loss_arr), loss_arr[-1]+0.1, f"({len(loss_arr) - 1}, {loss_arr[-1]:.6})")
+            ax.text(len(loss_arr), loss_arr[-1], f"({len(loss_arr) - 1}, {loss_arr[-1]:.6})")
             plt.xlabel("Step-1")
             plt.ylabel("Loss")
             plt.title("Vocoder Loss")

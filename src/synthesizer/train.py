@@ -138,7 +138,7 @@ def train(run_id: str, syn_dir: Path, models_dir: Path, save_every: int,  backup
             p["lr"] = lr
 
         collate_fn = partial(collate_synthesizer, r=r, hparams=hparams)
-        data_loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=16, collate_fn=collate_fn)
+        data_loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=4, collate_fn=collate_fn)
 
         total_iters = len(dataset)
         steps_per_epoch = np.ceil(total_iters / batch_size).astype(np.int32)

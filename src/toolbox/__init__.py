@@ -5,12 +5,15 @@ from time import perf_counter as timer
 
 import numpy as np
 import torch
+import soundfile as sf
 
 from encoder import inference as encoder
 from synthesizer.inference import Synthesizer
+from synthesizer.hparams import hparams
 from toolbox.ui import UI
 from toolbox.utterance import Utterance
 from vocoder import inference as vocoder
+import time
 
 
 # Use this directory structure for your datasets, or modify it to fit your needs
@@ -42,10 +45,11 @@ MAX_WAVS = 15
 
 
 class Toolbox:
-    def __init__(self, datasets_root: Path, models_dir: Path, seed: int=None):
+    def __init__(self, datasets_root: Path, models_dir: Path, seed: int=None, griffin_lim=False):
         sys.excepthook = self.excepthook
         self.datasets_root = datasets_root
         self.utterances = set()
+        self.use_griffin_lim = griffin_lim
         self.current_generated = (None, None, None, None) # speaker_name, spec, breaks, wav
 
         self.synthesizer = None # type: Synthesizer
@@ -53,6 +57,7 @@ class Toolbox:
         self.waves_list = []
         self.waves_count = 0
         self.waves_namelist = []
+        self.start_generate_time = None
 
         # Check for webrtcvad (enables removal of silences in vocoder output)
         try:
@@ -194,6 +199,7 @@ class Toolbox:
         self.ui.draw_umap_projections(self.utterances)
 
     def synthesize(self):
+        self.start_generate_time = time.time()
         self.ui.log("Generating the mel spectrogram...")
         self.ui.set_loading(1)
 
@@ -246,7 +252,7 @@ class Toolbox:
                    % (i * b_size, seq_len * b_size, b_size, gen_rate, real_time_factor)
             self.ui.log(line, "overwrite")
             self.ui.set_loading(i, seq_len)
-        if self.ui.current_vocoder_fpath is not None:
+        if self.ui.current_vocoder_fpath is not None and not self.use_griffin_lim:
             self.ui.log("")
             wav = vocoder.infer_waveform(spec, progress_callback=vocoder_progress)
         else:
@@ -254,6 +260,7 @@ class Toolbox:
             wav = Synthesizer.griffin_lim(spec)
         self.ui.set_loading(0)
         self.ui.log(" Done!", "append")
+        self.ui.log(f"Generate time: {time.time() - self.start_generate_time}s")
 
         # Add breaks
         b_ends = np.cumsum(np.array(breaks) * Synthesizer.hparams.hop_size)

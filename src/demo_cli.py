@@ -25,6 +25,9 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--syn_model_fpath", type=Path,
                         default="saved_models/default/synthesizer.pt",
                         help="Path to a saved synthesizer")
+    parser.add_argument("--griffin_lim",
+                        action="store_true",
+                        help="if True, use vocoder, else use griffin-lim")
     parser.add_argument("-v", "--voc_model_fpath", type=Path,
                         default="saved_models/default/vocoder.pt",
                         help="Path to a saved vocoder")
@@ -60,11 +63,15 @@ if __name__ == '__main__':
         print("Using CPU for inference.\n")
 
     ## Load the models one by one.
-    print("Preparing the encoder, the synthesizer and the vocoder...")
-    ensure_default_models(Path("saved_models"))
+    if not args.griffin_lim:
+        print("Preparing the encoder, the synthesizer and the vocoder...")
+    else:
+        print("Preparing the encoder and the synthesizer...")
+        ensure_default_models(Path("saved_models"))
     encoder.load_model(args.enc_model_fpath)
     synthesizer = Synthesizer(args.syn_model_fpath)
-    vocoder.load_model(args.voc_model_fpath)
+    if not args.griffin_lim:
+        vocoder.load_model(args.voc_model_fpath)
 
 
     ## Run a test
@@ -98,15 +105,16 @@ if __name__ == '__main__':
     mel = np.concatenate(mels, axis=1)
     # The vocoder can take a callback function to display the generation. More on that later. For
     # now we'll simply hide it like this:
-    no_action = lambda *args: None
-    print("\tTesting the vocoder...")
-    # For the sake of making this test short, we'll pass a short target length. The target length
-    # is the length of the wav segments that are processed in parallel. E.g. for audio sampled
-    # at 16000 Hertz, a target length of 8000 means that the target audio will be cut in chunks of
-    # 0.5 seconds which will all be generated together. The parameters here are absurdly short, and
-    # that has a detrimental effect on the quality of the audio. The default parameters are
-    # recommended in general.
-    vocoder.infer_waveform(mel, target=200, overlap=50, progress_callback=no_action)
+    if not args.griffin_lim:
+        no_action = lambda *args: None
+        print("\tTesting the vocoder...")
+        # For the sake of making this test short, we'll pass a short target length. The target length
+        # is the length of the wav segments that are processed in parallel. E.g. for audio sampled
+        # at 16000 Hertz, a target length of 8000 means that the target audio will be cut in chunks of
+        # 0.5 seconds which will all be generated together. The parameters here are absurdly short, and
+        # that has a detrimental effect on the quality of the audio. The default parameters are
+        # recommended in general.
+        vocoder.infer_waveform(mel, target=200, overlap=50, progress_callback=no_action)
 
     print("All test passed! You can now synthesize speech.\n\n")
 
@@ -172,10 +180,13 @@ if __name__ == '__main__':
 
             # Synthesizing the waveform is fairly straightforward. Remember that the longer the
             # spectrogram, the more time-efficient the vocoder.
-            generated_wav = vocoder.infer_waveform(spec)
+            if not args.griffin_lim:
+                generated_wav = vocoder.infer_waveform(spec)
+            else:
+                generated_wav = Synthesizer.griffin_lim(spec)
 
 
-            ## Post-generation
+                ## Post-generation
             # There's a bug with sounddevice that makes the audio cut one second earlier, so we
             # pad it.
             generated_wav = np.pad(generated_wav, (0, synthesizer.sample_rate), mode="constant")

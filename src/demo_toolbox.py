@@ -22,6 +22,9 @@ if __name__ == '__main__':
         "If True, all inference will be done on CPU")
     parser.add_argument("--seed", type=int, default=None, help=\
         "Optional random number seed value to make toolbox deterministic.")
+    parser.add_argument("--griffin_lim",
+                        action="store_true",
+                        help="if True, use griffin-lim, else use vocoder")
     args = parser.parse_args()
     arg_dict = vars(args)
     print_args(args, parser)

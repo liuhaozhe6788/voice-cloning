@@ -24,7 +24,7 @@ def train(run_id: str, clean_data_root: Path, models_dir: Path, umap_every: int,
         dataset,
         speakers_per_batch,
         utterances_per_speaker,
-        num_workers=8,
+        num_workers=4,
         pin_memory=True
     )
 
@@ -53,6 +53,7 @@ def train(run_id: str, clean_data_root: Path, models_dir: Path, umap_every: int,
             print("Found existing model \"%s\", loading it and resuming training." % run_id)
             checkpoint = torch.load(state_fpath)
             init_step = checkpoint["step"]
+            print(f"Resuming training from step {init_step}")
             model.load_state_dict(checkpoint["model_state"])
             optimizer.load_state_dict(checkpoint["optimizer_state"])
             optimizer.param_groups[0]["lr"] = learning_rate_init

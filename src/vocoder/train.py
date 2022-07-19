@@ -76,7 +76,7 @@ def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_tr
                   ('Sequence Len', hp.voc_seq_len)])
 
     # profiler = Profiler(summarize_every=10, disabled=False)
-    for epoch in range(1, 350):
+    for epoch in range(1, 100):
         data_loader = DataLoader(dataset, hp.voc_batch_size, shuffle=True, num_workers=8, collate_fn=collate_vocoder, pin_memory=True)
         start = time.time()
 
@@ -117,7 +117,7 @@ def train(run_id: str, syn_dir: Path, voc_dir: Path, models_dir: Path, ground_tr
                 model.save(weights_fpath, optimizer)
 
             msg = f"| Epoch: {epoch} ({i}/{len(data_loader)}) | " \
-                f"Loss: {loss_window.average:.4f} | {speed:.1f} " \
+                f"Loss: {loss_window.average:.4f} | {speed:.4f} " \
                 f"steps/s | Step: {k}k | "
             stream(msg)
 
